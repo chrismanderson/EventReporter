@@ -1,4 +1,5 @@
 require './attendee'
+require 'csv'
 
 module EventReporter
   class Queue
@@ -48,10 +49,19 @@ module EventReporter
       @current_queue = []
     end
 
+    def output_headers
+      return %w(LAST\ NAME FIRST\ NAME EMAIL ZIPCODE CITY STATE STREET)
+    end 
+
     # saves output to a file name
     def save_to(filename)
-      output = File.new(filename, "w")
-      output.write(print(DEFAULT_SORT_KEY))
+      output = CSV.open(filename, "w")
+      output << output_fields
+      @current_queue.each do |record|
+      output << [record.last_name, record.first_name, 
+        record.email, record.zipcode, 
+        record.city, record.state, record.street]
+      end
       output.close
       if (File.exists?(filename))
         return "File saved successfully."
@@ -59,6 +69,5 @@ module EventReporter
         return "File failed to save."
       end
     end
-
   end
 end

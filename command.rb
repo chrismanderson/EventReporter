@@ -73,10 +73,8 @@ module EventReporter
     # parses the data and sends data and parsed args
     # to find_implementation which actually implements finding
     def find(args, data = @attendees)
-      puts args.inspect
       newstring = args.join(" ")
       newstring = newstring.split(' and ', 2)
-      puts newstring
       if check_for_data
         newstring.count.times do |i|
           arg_data = split_args(newstring[i])
@@ -203,21 +201,25 @@ module EventReporter
       !parameters.nil? && parameters =~ /\.csv$/
     end
 
+    def correct_file_name(filename)
+      if filename.empty? then filename = DEFAULT_FILE
+      else filename = "#{filename.first}"
+      end
+    end
+    
     # loads a file, passing in a default if there is no file specified
     def load(filename)
-      if filename.empty? then filename = DEFAULT_FILE
-        else filename = "#{filename.first}"
-      end
-      if valid_parameters_for_file?(filename)
-        if (File.exists?(filename))
-          file = CSV.open(filename, CSV_OPTIONS)
-          @attendees = file.collect{ |line| EventReporter::Attendee.new(line) }
-          "File successfully loaded."
-        else
-          "Sorry, I couldn't load the [#{filename}]file."
+      @attendees = []
+      @header = []
+      filename = correct_file_name(filename)
+      if valid_parameters_for_file?(filename) && (File.exists?(filename))
+        CSV.open(filename, CSV_OPTIONS).each do |line|
+          @attendees << EventReporter::Attendee.new(line)
+          @headers = line.headers.reject{|h| h == :_}
         end
+        "File successfully loaded."
       else
-        "Sorry, I couldn't load the [#{filename}]file."
+          "Sorry, I couldn't load the [#{filename}] file."
       end
     end
 
