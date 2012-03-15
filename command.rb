@@ -43,7 +43,6 @@ module EventReporter
     # method to handle queue commands
     # calls the queue instance to organize the data
     def queue(args)
-      puts "args are #{args[0..1].join(" ")}"
       if valid_args_for_queue?(args)
         "You called queue with valid #{args}"
         case args.first
@@ -64,7 +63,7 @@ module EventReporter
       elsif args[0] == "print"
         args.count == 1 || (args[1] == "by" && args.count == 3 )
       elsif args[0] == "save"
-        args[1] == "to" && args.count == 3 
+        args[1] == "to" && args.count == 3
       else
         true
       end
@@ -74,24 +73,45 @@ module EventReporter
     # parses the data and sends data and parsed args
     # to find_implementation which actually implements finding
     def find(args, data = @attendees)
-      if valid_args_for_find?(args)
-        args = parse_find_arguments(args)
-        args.each_with_index do |f, i|
-          if i % 2 == 0
-            puts "finding #{args}"
-            data = find_implemtation(data, args.slice(i, 2))
-          end
+      puts args.inspect
+      newstring = args.join(" ")
+      newstring = newstring.split(' and ', 2)
+      puts newstring
+      if check_for_data
+        newstring.count.times do |i|
+          arg_data = split_args(newstring[i])
+          data = find_implemtation(data, arg_data)
         end
-        @my_queue.load(data)
-        find_result_message(@my_queue.count, args)
+          @my_queue.load(data)
+          find_result_message(@my_queue.count, args)
       else
          error_message(args)
       end
     end
 
+    def split_args(args)
+      return args.split(" ", 2)
+    end
+
+    def check_for_data
+      return true unless @attendees.nil?
+    end
+
+    # parses the arguments to the find command
+    # allowing for multiple uses of the 'and' operator
+    def parse_find_arguments(args)
+      result_args = args[0..1]
+      args.each_with_index do |f, i|
+        if f == "and"
+          result_args += args[i+1..i+2]
+        end
+      end
+      result_args
+    end
+
     # implements the algorithm for finding data
     def find_implemtation(data, args)
-      if valid_args_for_find?(args)
+      if valid_args_for_find?(args) && !data.nil?
         temp_queue = data.select do |r|
           r.send(args[0]).upcase == args[1].upcase
         end
@@ -112,25 +132,12 @@ module EventReporter
       true
     end
 
-    # parses the arguments to the find command
-    # allowing for multiple uses of the 'and' operator
-    def parse_find_arguments(args)
-      result_args = args[0..1]
-      args.each_with_index do |f, i|
-        if f == "and"
-          result_args += args[i+1..i+2]
-        end
-      end
-      result_args
-    end
-
     # displays the result of a search
     def find_result_message(count, args)
       if count == 0
         "I couldn't find #{args[1]} in #{args[0]}."
       else
-        puts "I found #{count} items."
-        @my_queue.print
+        "I found #{count} items."
       end
     end
 
@@ -197,20 +204,20 @@ module EventReporter
     end
 
     # loads a file, passing in a default if there is no file specified
-    def load(filename = DEFAULT_FILE)
-      # protects against 'load' with no argument
-      if filename.empty? then filename = DEFAULT_FILE end
+    def load(filename)
+      if filename.empty? then filename = DEFAULT_FILE
+        else filename = "#{filename.first}"
+      end
       if valid_parameters_for_file?(filename)
         if (File.exists?(filename))
           file = CSV.open(filename, CSV_OPTIONS)
           @attendees = file.collect{ |line| EventReporter::Attendee.new(line) }
-          @my_queue.load(@attendees)
           "File successfully loaded."
         else
-          error_message(filename)
+          "Sorry, I couldn't load the [#{filename}]file."
         end
       else
-        error_message(filename)
+        "Sorry, I couldn't load the [#{filename}]file."
       end
     end
 

@@ -10,7 +10,6 @@ module EventReporter
 
     def initialize
       @controller = EventReporter::Command.new
-      @controller.load
       run
     end
 
