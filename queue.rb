@@ -15,10 +15,10 @@ module EventReporter
       result = "#{OUTPUT_HEADERS.join("\t")}\n"
       puts "I'm printing by #{parameters}"
       temp_queue = @current_queue.sort_by { |hsh| hsh.send(parameters) }
-      temp_queue.each do |attendee|
-        result += "#{attendee.last_name}\t#{attendee.first_name}\t#{attendee.email}\t"
-        result += "#{attendee.zipcode}\t#{attendee.city}\t#{attendee.state}\t"
-        result += "#{attendee.address}\n"
+      temp_queue.each do |a|
+        result += "#{a.last_name}\t#{a.first_name}\t#{a.email}\t"
+        result += "#{a.zipcode}\t#{a.city}\t#{a.state}\t"
+        result += "#{a.address}\n"
       end
       result
     end

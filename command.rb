@@ -64,17 +64,29 @@ module EventReporter
     end
 
     def subtract(args)
-      puts "subtract"
+      new_query = []
+      if valid_args_for_addsub?(args)
+        args = parse_args_for_addsub(args)
+        new_query = find_implemtation(@attendees, args)
+        new_query = @my_queue.current_queue - new_query
+        @my_queue.load(new_query)
+        @my_queue.print
+      else
+        error_message(args)
+      end
+
     end
 
     def add(args)
       new_query = []
-      puts "anything?"
       if valid_args_for_addsub?(args)
         args = parse_args_for_addsub(args)
-        new_query = find_implemtation(args, @my_queue.current_queue)
-        new_query = @my_queue + new_query
+        new_query = find_implemtation(@attendees, args)
+        new_query = @my_queue.current_queue + new_query
         @my_queue.load(new_query)
+        @my_queue.print
+      else
+        error_message(args)
       end
     end
 
@@ -89,7 +101,7 @@ module EventReporter
     def find(args, data = @attendees)
       if valid_args_for_find?(args)
         args = parse_find_arguments(args)
-        args.each_with_index do |f, i| 
+        args.each_with_index do |f, i|
           if i % 2 == 0
             puts "finding #{args}"
             data = find_implemtation(data, args.slice(i, 2))
@@ -99,7 +111,7 @@ module EventReporter
         find_result_message(@my_queue.count, args)
       else
          error_message(args)
-      end 
+      end
     end
 
     def parse_find_arguments(args)
