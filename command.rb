@@ -206,7 +206,7 @@ module EventReporter
       else filename = "#{filename.first}"
       end
     end
-    
+
     # loads a file, passing in a default if there is no file specified
     def load(filename)
       @attendees = []

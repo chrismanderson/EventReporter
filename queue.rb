@@ -3,17 +3,14 @@ require 'csv'
 
 module EventReporter
   class Queue
-    OUTPUT_HEADERS = ['LAST NAME', 'FIRST NAME', 'EMAIL',
-            'ZIPCODE', 'CITY', 'STATE', 'ADDRESS', 'PHONE']
     DEFAULT_SORT_KEY = "reg_date"
 
     attr_accessor :current_queue
-
     # prints the tab deliminated list
     # sorts by reg_date by default, otherwise takes an argument to sort
     def print(parameters)
       if parameters == "print" then parameters = DEFAULT_SORT_KEY end
-      result = "#{OUTPUT_HEADERS.join("\t")}\n"
+      result = "#{output_headers.join("\t")}\n"
       if validate_print_attributes?(parameters)
         temp_queue = @current_queue.sort_by { |hsh| hsh.send(parameters) }
         temp_queue.each do |a|
@@ -51,16 +48,15 @@ module EventReporter
 
     def output_headers
       return %w(LAST\ NAME FIRST\ NAME EMAIL ZIPCODE CITY STATE STREET)
-    end 
+    end
 
     # saves output to a file name
     def save_to(filename)
       output = CSV.open(filename, "w")
       output << output_fields
       @current_queue.each do |record|
-      output << [record.last_name, record.first_name, 
-        record.email, record.zipcode, 
-        record.city, record.state, record.street]
+      output << [record.last_name, record.first_name, record.email,
+        record.zipcode, record.city, record.state, record.street]
       end
       output.close
       if (File.exists?(filename))
