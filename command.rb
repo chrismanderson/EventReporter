@@ -20,6 +20,7 @@ module EventReporter
 
     attr_accessor :attendees
 
+    # init method and generates a new queue
     def initialize
       @my_queue = Queue.new
     end
@@ -29,6 +30,8 @@ module EventReporter
       ALL_COMMANDS.keys.include?(command)
     end
 
+    # main method to execute commands
+    # sends parsed command to relevant method
     def execute(command, args)
       if (valid? command)
         self.send(command,args)
@@ -37,6 +40,8 @@ module EventReporter
       end
     end
 
+    # method to handle queue commands
+    # calls the queue instance to organize the data
     def queue(args)
       puts "args are #{args[0..1].join(" ")}"
       if valid_args_for_queue?(args)
@@ -52,52 +57,22 @@ module EventReporter
       end
     end
 
-    def find_implemtation(data, args)
-      if valid_args_for_find?(args)
-        temp_queue = data.select do |r|
-          r.send(args[0]).upcase == args[1].upcase
-        end
-        temp_queue
+    # validates queue arguments
+    def valid_args_for_queue?(args)
+      if !%w(count clear print save).include?(args[0])
+        false
+      elsif args[0] == "print"
+        args.count == 1 || (args[1] == "by" && args.count == 3 )
+      elsif args[0] == "save"
+        args[1] == "to" && args.count == 3 
       else
-        error_message(args)
+        true
       end
     end
 
-    def subtract(args)
-      new_query = []
-      if valid_args_for_addsub?(args)
-        args = parse_args_for_addsub(args)
-        new_query = find_implemtation(@attendees, args)
-        new_query = @my_queue.current_queue - new_query
-        @my_queue.load(new_query)
-        @my_queue.print
-      else
-        error_message(args)
-      end
-
-    end
-
-    def add(args)
-      new_query = []
-      if valid_args_for_addsub?(args)
-        args = parse_args_for_addsub(args)
-        new_query = find_implemtation(@attendees, args)
-        new_query = @my_queue.current_queue + new_query
-        @my_queue.load(new_query)
-        @my_queue.print
-      else
-        error_message(args)
-      end
-    end
-
-    def valid_args_for_addsub?(args)
-      args.first == "find" && valid_args_for_find?(args[1..-1])
-    end
-
-    def parse_args_for_addsub(args)
-      args[1..-1]
-    end
-
+    # main method that governs finding
+    # parses the data and sends data and parsed args
+    # to find_implementation which actually implements finding
     def find(args, data = @attendees)
       if valid_args_for_find?(args)
         args = parse_find_arguments(args)
@@ -114,6 +89,31 @@ module EventReporter
       end
     end
 
+    # implements the algorithm for finding data
+    def find_implemtation(data, args)
+      if valid_args_for_find?(args)
+        temp_queue = data.select do |r|
+          r.send(args[0]).upcase == args[1].upcase
+        end
+        temp_queue
+      else
+        error_message(args)
+      end
+    end
+
+    # validates find arguments
+    # accounting for 'ands'
+    def valid_args_for_find?(args)
+      args.each_with_index do |a, i|
+        if i % 3 == 0
+          return false unless Attendee.method_defined?(a) && !args[i + 1].nil?
+        end
+      end
+      true
+    end
+
+    # parses the arguments to the find command
+    # allowing for multiple uses of the 'and' operator
     def parse_find_arguments(args)
       result_args = args[0..1]
       args.each_with_index do |f, i|
@@ -124,6 +124,7 @@ module EventReporter
       result_args
     end
 
+    # displays the result of a search
     def find_result_message(count, args)
       if count == 0
         "I couldn't find #{args[1]} in #{args[0]}."
@@ -133,27 +134,45 @@ module EventReporter
       end
     end
 
-    def valid_args_for_find?(args)
-      args.each_with_index do |a, i|
-        if i % 3 == 0
-          return false unless Attendee.method_defined?(a) && !args[i + 1].nil?
-        end
-      end
-      true
-    end
-
-    def valid_args_for_queue?(args)
-      if !%w(count clear print save).include?(args[0])
-        false
-      elsif args[0] == "print"
-        args.count == 1 || (args[1] == "by" && args.count == 3 )
-      elsif args[0] == "save"
-        args[1] == "to" && args.count == 3
+    # subtracts a search from the current queue
+    def subtract(args)
+      new_query = []
+      if valid_args_for_addsub?(args)
+        args = parse_args_for_addsub(args)
+        new_query = find_implemtation(@attendees, args)
+        new_query = @my_queue.current_queue - new_query
+        @my_queue.load(new_query)
+        @my_queue.print
       else
-        true
+        error_message(args)
       end
     end
 
+    # adds a search to the current queue
+    def add(args)
+      new_query = []
+      if valid_args_for_addsub?(args)
+        args = parse_args_for_addsub(args)
+        new_query = find_implemtation(@attendees, args)
+        new_query = @my_queue.current_queue + new_query
+        @my_queue.load(new_query)
+        @my_queue.print
+      else
+        error_message(args)
+      end
+    end
+
+    # validates args for the add/subtract methods
+    def valid_args_for_addsub?(args)
+      args.first == "find" && valid_args_for_find?(args[1..-1])
+    end
+
+    # parses the args for add_sub
+    def parse_args_for_addsub(args)
+      args[1..-1]
+    end
+
+    # help method, grabs data from the constant ALL_COMMANDS
     def help(args)
       args = args.join(" ")
       if (valid_args_for_help?(args))
@@ -167,18 +186,21 @@ module EventReporter
       end
     end
 
+    # validates arguments for the help method
     def valid_args_for_help?(args)
       args.empty? || ALL_COMMANDS.has_key?(args)
     end
 
-    def valid_parameters_for_load?(parameters)
+    # validates arguments for load, checking for a csv file
+    def valid_parameters_for_file?(parameters)
       !parameters.nil? && parameters =~ /\.csv$/
     end
 
+    # loads a file, passing in a default if there is no file specified
     def load(filename = DEFAULT_FILE)
       # protects against 'load' with no argument
       if filename.empty? then filename = DEFAULT_FILE end
-      if valid_parameters_for_load?(filename)
+      if valid_parameters_for_file?(filename)
         if (File.exists?(filename))
           file = CSV.open(filename, CSV_OPTIONS)
           @attendees = file.collect{ |line| EventReporter::Attendee.new(line) }
@@ -192,6 +214,7 @@ module EventReporter
       end
     end
 
+    # error message method for all other methods
     def error_message(error)
       "Sorry, I didn't understand #{error.join(" ")}"
     end

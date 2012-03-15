@@ -1,15 +1,10 @@
 module EventReporter
   class Queue
-    SAMPLE_QUEUE = %w{doing some of this stuff is super hard and shit}
     OUTPUT_HEADERS = ['LAST NAME', 'FIRST NAME', 'EMAIL',
             'ZIPCODE', 'CITY', 'STATE', 'ADDRESS']
     DEFAULT_SORT_KEY = "reg_date"
 
     attr_accessor :current_queue
-
-    def initialize
-      @current_queue = SAMPLE_QUEUE
-    end
 
     def print(parameters = DEFAULT_SORT_KEY)
       result = "#{OUTPUT_HEADERS.join("\t")}\n"
