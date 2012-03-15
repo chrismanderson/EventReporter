@@ -48,16 +48,46 @@ module EventReporter
       end
     end
 
-    def find(args)
+    def find_implemtation(data, args)
       if valid_args_for_find?(args)
-        temp_queue = @attendees.select do |r|
+        temp_queue = data.select do |r|
           r.send(args[0]).upcase == args[1].upcase
         end
-        @my_queue.load(temp_queue)
-        find_result_message(@my_queue.count, args)
       else
         error_message(args)
       end
+    end
+
+    def find(args)
+      args = parse_find_arguments(args)
+      temp_queue = @attendees
+      args.each_with_index do |f, index| 
+        if index % 2 == 0
+          puts "finding #{args}"
+          temp_queue = find_implemtation(temp_queue, args.slice(index, 2))
+        end
+      end
+      @my_queue.load(temp_queue)
+      find_result_message(@my_queue.count, args)
+    end
+
+    def find_result_message(count, args)
+      if count == 0
+       "I couldn't find #{args[1]} in #{args[0]}."
+      else
+        puts "I found #{count} items."
+      @my_queue.print
+      end
+    end
+
+    def parse_find_arguments(args)
+      result_args = args[0..1]
+      args.each_with_index do |f, index|
+        if f == "and"
+          result_args += args[index+1..index+2]
+        end
+      end
+      result_args
     end
 
     def find_result_message(count, args)
@@ -71,10 +101,6 @@ module EventReporter
 
     def valid_args_for_find?(args)
       args.count == 2 && Attendee.method_defined?(args[0])
-    end
-
-    def create_queue_from(data)
-      @my_queue.load(data)
     end
 
     def valid_args_for_queue?(args)
@@ -117,7 +143,7 @@ module EventReporter
         if (File.exists?(filename))
           file = CSV.open(filename, CSV_OPTIONS)
           @attendees = file.collect { |line| EventReporter::Attendee.new(line) }
-          create_queue_from(@attendees)
+          @my_queue.load(@attendees)
           "File successfully loaded."
         else
           error_message(filename)
