@@ -1,10 +1,13 @@
 $LOAD_PATH << './'
 require './queue'
+require './attendee'
 
 module EventReporter
   class Command
     ALL_COMMANDS = {"load" => "loads a new file",
             "help" => "shows a list of available commands",
+            "add" => "add a query to the current queue",
+            "subtract" => "removes a query to the current queue",
             "queue" => "a set of data",
             "queue count" => "total items in the queue",
             "queue clear" => "empties the queue",
@@ -13,6 +16,7 @@ module EventReporter
             "queue save to" => "exports queue to a CSV",
             "find" => "load the queue with matching records"}
     CSV_OPTIONS = {:headers => true, :header_converters => :symbol}
+    DEFAULT_FILE = "event_attendees.csv"
 
     attr_accessor :attendees
 
@@ -53,38 +57,56 @@ module EventReporter
         temp_queue = data.select do |r|
           r.send(args[0]).upcase == args[1].upcase
         end
+        temp_queue
       else
         error_message(args)
       end
     end
 
-    def find(args)
-      args = parse_find_arguments(args)
-      temp_queue = @attendees
-      args.each_with_index do |f, index| 
-        if index % 2 == 0
-          puts "finding #{args}"
-          temp_queue = find_implemtation(temp_queue, args.slice(index, 2))
-        end
-      end
-      @my_queue.load(temp_queue)
-      find_result_message(@my_queue.count, args)
+    def subtract(args)
+      puts "subtract"
     end
 
-    def find_result_message(count, args)
-      if count == 0
-       "I couldn't find #{args[1]} in #{args[0]}."
-      else
-        puts "I found #{count} items."
-      @my_queue.print
+    def add(args)
+      new_query = []
+      puts "anything?"
+      if valid_args_for_addsub?(args)
+        args = parse_args_for_addsub(args)
+        new_query = find_implemtation(args, @my_queue.current_queue)
+        new_query = @my_queue + new_query
+        @my_queue.load(new_query)
       end
+    end
+
+    def valid_args_for_addsub?(args)
+      args.first == "find" && valid_args_for_find?(args[1..-1])
+    end
+
+    def parse_args_for_addsub(args)
+      args[1..-1]
+    end
+
+    def find(args, data = @attendees)
+      if valid_args_for_find?(args)
+        args = parse_find_arguments(args)
+        args.each_with_index do |f, i| 
+          if i % 2 == 0
+            puts "finding #{args}"
+            data = find_implemtation(data, args.slice(i, 2))
+          end
+        end
+        @my_queue.load(data)
+        find_result_message(@my_queue.count, args)
+      else
+         error_message(args)
+      end 
     end
 
     def parse_find_arguments(args)
       result_args = args[0..1]
-      args.each_with_index do |f, index|
+      args.each_with_index do |f, i|
         if f == "and"
-          result_args += args[index+1..index+2]
+          result_args += args[i+1..i+2]
         end
       end
       result_args
@@ -100,7 +122,12 @@ module EventReporter
     end
 
     def valid_args_for_find?(args)
-      args.count == 2 && Attendee.method_defined?(args[0])
+      args.each_with_index do |a, i|
+        if i % 3 == 0
+          return false unless Attendee.method_defined?(a) && !args[i + 1].nil?
+        end
+      end
+      true
     end
 
     def valid_args_for_queue?(args)
@@ -133,28 +160,28 @@ module EventReporter
     end
 
     def valid_parameters_for_load?(parameters)
-      parameters.count == 1 && parameters[0] =~ /\.csv$/
+      !parameters.nil? && parameters =~ /\.csv$/
     end
 
-    def load(filename = ["event_attendees.csv"])
+    def load(filename = DEFAULT_FILE)
+      # protects against 'load' with no argument
+      if filename.empty? then filename = DEFAULT_FILE end
       if valid_parameters_for_load?(filename)
-        filename = filename.join("")
-
         if (File.exists?(filename))
           file = CSV.open(filename, CSV_OPTIONS)
-          @attendees = file.collect { |line| EventReporter::Attendee.new(line) }
+          @attendees = file.collect{ |line| EventReporter::Attendee.new(line) }
           @my_queue.load(@attendees)
           "File successfully loaded."
         else
           error_message(filename)
         end
+      else
+        error_message(filename)
       end
     end
 
     def error_message(error)
       "Sorry, I didn't understand #{error.join(" ")}"
     end
-
-
   end
 end

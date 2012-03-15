@@ -3,6 +3,7 @@ require './command'
 require './attendee'
 require 'csv'
 
+
 module EventReporter
   class Reporter
     EXIT_COMMANDS = ["quit", "q", "e", "exit"]
@@ -39,7 +40,7 @@ module EventReporter
         command, args = parse_user_input(input)
         result = @controller.execute(command, args) unless quitting?(command)
       else
-        "You didn't type anything. Please try again."
+        result = "You didn't type anything. Please try again."
       end
     end
 

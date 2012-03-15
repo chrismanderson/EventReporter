@@ -45,7 +45,7 @@ module EventReporter
       if dirty.nil?
         INVALID_DATA
       else
-        dirty
+        dirty.capitalize
       end
     end
 
