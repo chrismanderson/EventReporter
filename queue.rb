@@ -3,6 +3,8 @@ require 'csv'
 
 module EventReporter
   class Queue
+    OUTPUT_HEADERS = ['LAST NAME', 'FIRST NAME', 'EMAIL',
+            'ZIPCODE', 'CITY', 'STATE', 'ADDRESS', 'PHONE']
     DEFAULT_SORT_KEY = "reg_date"
 
     attr_accessor :current_queue
@@ -53,7 +55,7 @@ module EventReporter
     # saves output to a file name
     def save_to(filename)
       output = CSV.open(filename, "w")
-      output << output_fields
+      output << output_headers
       @current_queue.each do |record|
       output << [record.last_name, record.first_name, record.email,
         record.zipcode, record.city, record.state, record.street]
